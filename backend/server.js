@@ -4,10 +4,21 @@ require("dotenv").config();
 const ensureSchema = require("./database/ensureSchema");
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173,https://anchuselva.github.io")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Origin is not allowed by CORS"));
+  }
+}));
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/", (_req, res) => res.json({ message: "SaveLKR API is running" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "SaveLKR API" }));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/income", require("./routes/incomeRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
